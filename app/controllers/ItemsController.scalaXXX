@@ -1,0 +1,24 @@
+package controllers
+
+import java.util.UUID
+import models.Item
+import services.ItemsService
+import play.api.mvc._
+
+class ItemsController(itemsService: ItemsService)
+    extends CRUDController[Item, UUID](itemsService)() {
+
+  def loadXML = Action {
+
+    //val xml = XML.loadFile("/Users/al/Projects/Scala/yahoo-weather.xml")
+
+    val xml = scala.xml.XML.load("http://www.skysports.com/feeds/11095/news.xml")
+
+    val xmlString = xml.text;
+
+    Ok(views.html.loadXML("LOADED XML Fragment", xmlString))
+
+  }
+
+}
+

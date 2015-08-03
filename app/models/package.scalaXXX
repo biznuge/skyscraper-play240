@@ -1,0 +1,31 @@
+import java.util.UUID
+
+import org.joda.time.DateTime
+import play.api.libs.json._
+
+package object models {
+
+  case class Item(
+    uuid: Option[UUID],
+    title: String,
+    link: String,
+    pubDate: Option[DateTime],
+    category: String,
+    enclosure: String)
+
+  object Item {
+    implicit val ItemFormat = Json.format[Item]
+    implicit object ItemIdentity extends Identity[Item, UUID] {
+      val name = "uuid"
+      def of(entity: Item): Option[UUID] = entity.uuid
+      def set(entity: Item, id: UUID): Item = entity.copy(uuid = Option(id))
+      def clear(entity: Item): Item = entity.copy(uuid = None)
+      def next: UUID = UUID.randomUUID()
+    }
+    /*implicit object BSONDateTimeHandler extends BSONHandler[BSONDateTime, DateTime] {
+      def read(time: BSONDateTime) = new DateTime(time.value)
+      def write(jdtime: DateTime) = BSONDateTime(jdtime.getMillis)
+    }*/
+  }
+
+}
