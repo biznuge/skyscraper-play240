@@ -1,0 +1,21 @@
+# Routes
+# This file defines all application routes (Higher priority routes first)
+# ~~~~
+
+GET     /                           controllers.Application.index()
+
+# Map static resources from the /public folder to the /assets URL path
+#GET     /assets/*file               controllers.Assets.at(path="/public", file)
+#GET     /webjars/*file              controllers.WebJarAssets.at(file)
+
+
+#GET        /                            controllers.Assets.at(path="/public", file="index.html")
+
+#GET	       /itemScrape 				controllers.ItemsController.loadXML
+#GET        /items/:id                   controllers.ItemsController.one(id: java.util.UUID)
+#GET        /items                       controllers.ItemsController.selection
+#POST	   /items 					    controllers.ItemsController.create
+#PUT	   	   /items/:id 				    controllers.ItemsController.update(id: java.util.UUID)
+#DELETE	   /items/:id 				    controllers.ItemsController.delete(id: java.util.UUID)
+
+GET        /assets/*file                 controllers.Assets.at(path="/public", file)

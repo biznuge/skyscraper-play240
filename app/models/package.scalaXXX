@@ -11,7 +11,7 @@ package object models {
     link: String,
     pubDate: Option[DateTime],
     category: String,
-    enclosure: String)
+    img: String)
 
   object Item {
     implicit val ItemFormat = Json.format[Item]

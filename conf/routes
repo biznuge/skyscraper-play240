@@ -1,21 +1,23 @@
 # Routes
 # This file defines all application routes (Higher priority routes first)
+#
+# Note: @controllers syntax signifies the actual controller instance, retrieved via GlobalSettings.getController().
 # ~~~~
 
-GET     /                           controllers.Application.index()
+# Single endpoint for serving AngularJS
+GET     /                           @controllers.Application.index()
+GET     /scrape                     @controllers.Items.scrape()
+GET     /ok                         @controllers.Items.index()
+#GET     /fuck                     controllers.Items.fuck()
+#GET     /randomUUID                 controllers.Application.randomUUID
+
+# User management API
+#GET     /items/:page/:term                      @controllers.Items.findItems(page:Integer, term: String)
+#POST    /itemSearch.json                 @controllers.Items.search
+#POST    /item                       @controllers.Users.createUser
+#PUT     /item/:firstName/:lastName  @controllers.Users.updateUser(firstName: String, lastName: String)
+
 
 # Map static resources from the /public folder to the /assets URL path
-#GET     /assets/*file               controllers.Assets.at(path="/public", file)
-#GET     /webjars/*file              controllers.WebJarAssets.at(file)
-
-
-#GET        /                            controllers.Assets.at(path="/public", file="index.html")
-
-#GET	       /itemScrape 				controllers.ItemsController.loadXML
-#GET        /items/:id                   controllers.ItemsController.one(id: java.util.UUID)
-#GET        /items                       controllers.ItemsController.selection
-#POST	   /items 					    controllers.ItemsController.create
-#PUT	   	   /items/:id 				    controllers.ItemsController.update(id: java.util.UUID)
-#DELETE	   /items/:id 				    controllers.ItemsController.delete(id: java.util.UUID)
-
+#GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)
 GET        /assets/*file                 controllers.Assets.at(path="/public", file)
