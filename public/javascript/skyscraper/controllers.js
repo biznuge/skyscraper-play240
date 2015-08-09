@@ -2,7 +2,7 @@ angular.module('SkyScraperApp.controllers', []).
 controller('itemsController', function($scope, itemsService, $http) {
 
     $scope.items = {};
-    $scope.loading = false;
+    $scope.loading = true;
 
     /*$scope.getMore = $http({
                 method: 'POST',
