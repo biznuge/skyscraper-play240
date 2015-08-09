@@ -127,7 +127,7 @@ class Items @Inject() (
       // this prevents us from
       //  A) making constant requests to the SKY RSS, which would most likely result
       //     in a restriction, since traffic increase would DDOS... :)
-      //  B) Roundtrips to the DB can be reduced significantly.
+      //  B) Roundtrips to the DB can be reduced .
       //
       // Caveat. This method, although it drops resource, will require a single first
       // hit of the controller emthod which would initialise the mongodb recordset
@@ -189,152 +189,36 @@ class Items @Inject() (
 
   }
 
-  /*
-  {
+  def searchItems(searchQuery: String) = Action.async {
 
-    if (Cache.get("scraped") == null) {
+    val query = BSONDocument(
+      "$text" -> BSONDocument(
+        "$search" -> searchQuery
+      )
+    )
 
-      //
-      Cache.set("scraped", true, 300 * 1);
-      // immediately set the cache object so that no subsequent requests hit this block.
-      // not entirely sure about whether this cache class/object is application / session
-      // scope, so this is either very efficient or not even slightly...
-      //
-      // tested with sessions in FF / Chrome and it DOES do an application
-      // scope style cache. Cool as tits.
-      //
-      // this prevents us from
-      //  A) making constant requests to the SKY RSS, which would most likely result
-      //     in a restriction, since traffic increase would DDOS... :)
-      //  B) Roundtrips to the DB can be reduced significantly.
-      //
+    val sortJson = Json.obj("pubDate" -> -1)
+    val futureList: scala.concurrent.Future[List[Item]] =
+      collection.
+        find(query).
+        sort(sortJson).
+        cursor[Item]().
+        collect[List](10)
 
-      import reactivemongo.bson._
+    val timeout = 10.seconds
+    val timeoutFuture = play.api.libs.concurrent.Promise.timeout("Oops", timeout)
 
-      // { "age": { "$gt": 27 } }
-      //val query = BSONDocument("age" -> BSONDocument("$gt" -> 27))
-
-      /*val query = BSONDocument();
-      val peopleOlderThanTwentySeven =
-        collection.
-          find(query).
-          cursor[BSONDocument].
-          collect[List]()*/
-
-      //  [error] C:\sites\skyscraper9\app\controllers\Items.scala:97: No Json serializer
-      //as JsObject found for type reactivemongo.bson.BSONDocument. Try to implement an
-      //implicit OWrites or OFormat for this type.
-
-      // result type is Future[List[BSONDocument]]
-      /*val peopleOlderThanTwentySeven =
-        collection.
-          find(query).
-          cursor[BSONDocument].
-          collect[List]()*/
-
-      val xml = scala.xml.XML.load("http://www.skysports.com/feeds/11095/news.xml")
-
-      val items = xml \ "channel" \ "item"
-
-      items.foreach { n =>
-
-        val title = (n \\ "title").text
-        val description = (n \\ "description").text
-        val link = (n \\ "link").text
-        val pubDate = (n \\ "pubDate").text
-        val category = (n \\ "category").text
-        val image = (n \\ "enclosure" \ "@url").text
-
-        // BST explodes the DateTimeFormat parse at the z
-        // stupid Bangladeshi Standard Time.
-        // "Sat, 01 Aug 2015 08:00:00 BST"
-        //
-        // This technically makes dates incorrect to a certain degree ( a fairly high one
-        // for 6 months of the year to be precise).
-        //
-        val dateTimeStr = pubDate.replace(" BST", " GMT")
-
-        var dateTimeObj = DateTime.parse(dateTimeStr, DateTimeFormat.forPattern("EEE, dd MMM y HH:mm:ss z"))
-
-        val item = Item(
-          title,
-          description,
-          link,
-          dateTimeObj,
-          category,
-          image
-        )
-
-        collection.insert(item).map {
-          lastError =>
-            logger.debug(s"Successfully inserted with LastError: $lastError")
-            Created(s"Item Created")
-        }
-
+    Future.firstCompletedOf(Seq(futureList, timeoutFuture)).map {
+      case list: List[Item] => {
+        // on successful return the items from the mongo collection
+        // are serialised to json and returned to the client.
+        Ok(Json.obj("items" -> list))
       }
-
-      play.Logger.info("just created a bunch of news... maybe")
-
-    } else {
-      play.Logger.info("missed the Atom consumer due to cache.")
+      // error case.
+      case t: String => InternalServerError(t)
     }
-
 
   }
-  */
 
-  /*Future.successful {
-      BadRequest("invalid json")
-    }*/
-
-  /*request.body.validate[Item].map {
-        item =>
-          // `item` is an instance of the case class `models.Item`
-          collection.insert(item).map {
-            lastError =>
-              logger.debug(s"Successfully inserted with LastError: $lastError")
-              Created(s"Item Created")
-          }
-      }.getOrElse(Future.successful(BadRequest("invalid json")))*/
-
-  //}
-
-  /*def updateItem(firstName: String, lastName: String) = Action.async(parse.json) {
-    request =>
-      request.body.validate[Item].map {
-        user =>
-          // find our user by first name and last name
-          val nameSelector = Json.obj("firstName" -> firstName, "lastName" -> lastName)
-          collection.update(nameSelector, user).map {
-            lastError =>
-              logger.debug(s"Successfully updated with LastError: $lastError")
-              Created(s"User Updated")
-          }
-      }.getOrElse(Future.successful(BadRequest("invalid json")))
-  }*/
-
-  /*def findItems(page: Integer, term: String) = Action.async(parse.json) {
-    // let's do our query
-    val cursor: Cursor[Item] = collection.
-      // find all
-      find(Json.obj("active" -> true)).
-      // sort them by creation date
-      sort(Json.obj("created" -> -1)).
-      // perform the query and get a cursor of JsObject
-      cursor[Item]
-
-    // gather all the JsObjects in a list
-    val futureItemsList: Future[List[Item]] = cursor.collect[List]()
-
-    // transform the list into a JsArray
-    val futurePersonsJsonArray: Future[JsArray] = futureItemsList.map { items =>
-      Json.arr(items)
-    }
-    // everything's ok! Let's reply with the array
-    futurePersonsJsonArray.map {
-      items =>
-        Ok(items(0))
-    } //.getOrElse(Future.successful(BadRequest("invalid json")))
-  }*/
 
 }

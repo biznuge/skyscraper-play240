@@ -10,13 +10,5 @@ angular.module('SkyScraperApp.services', []).
       });
     }
 
-    /*itemsPlayController.getMore = function(previousPubDate) {
-          return $http({
-            method: 'GET',
-            url: '/getMore',
-            data: {pubDate:previousPubDate}
-          });
-    }*/
-
     return itemsPlayController;
   });

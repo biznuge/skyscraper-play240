@@ -2,34 +2,40 @@
 
 @main("SkyScraper App") {
 
-    <div data-ng-app="SkyScraperApp" class="row-fluid" data-ng-controller="itemsController">
+    <div data-ng-app="SkyScraperApp" data-ng-controller="itemsController">
 
         <h1>
-            Search:
-            <input ng-model="query">
-            <span class="btn btn-default" data-ng-click="search()" >
-
+            <form data-ng-submit="searchSubmit()" novalidate id="search-submit-form" method="post" >
+            <input ng-model="searchQuery"  placeholder="search...">
+            <button type="submit" class="btn btn-default"  >
                 <span class="glyphicon glyphicon-search"></span>
-            </span>
-
+            </button>
+            <button data-ng-if="searchQuery!=null && searchQuery!=''" type="button" class="btn btn-default" data-ng-click="killSearch()" >
+                <span class="glyphicon glyphicon-remove"></span>
+            </button>
+            </form>
         </h1><br/>
 
 
         <div data-ng-if="searchItems==null" class="item" data-ng-repeat="item in items">
             <a href="{{item.link}}" title="{{item.title}}">
                 <strong>{{item.title}}</strong><br/>
-                <span>{{item.description}}</span><br/>
-
-            <em>{{formatDate(item.pubDate) |  date:"dd/MM/yyyy HH:mm:ss" }}</em>
+                <em>{{formatDate(item.pubDate) |  date:"dd/MM/yyyy HH:mm:ss" }}</em><br/>
+                <span>
+                    <img data-ng-if="item.image!=null" src="{{item.image}}" />
+                    {{item.description}}
+                </span><br/>
             </a>
         </div>
 
-        <div data-ng-if="searchItems!=null" class="item" data-ng-repeat="item in searchItems">
+        <div data-ng-if="searchItems!=null" class="item container-fluid" data-ng-repeat="item in searchItems">
             <a href="{{item.link}}" title="{{item.title}}">
                 <strong>{{item.title}}</strong><br/>
-                <span>{{item.description}}</span><br/>
-
-                <em>{{formatDate(item.pubDate) |  date:"dd/MM/yyyy HH:mm:ss" }}</em>
+                <em>{{formatDate(item.pubDate) |  date:"dd/MM/yyyy HH:mm:ss" }}</em><br/>
+                <span>
+                    <img data-ng-if="item.image!=null" src="{{item.image}}" />
+                    {{item.description}}
+                </span><br/>
             </a>
         </div>
 

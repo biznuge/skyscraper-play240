@@ -1,6 +1,7 @@
 .item{
     padding:1rem;
     border:1px solid #FFF;
+    clear:both;
 }
 
 .item:hover{
@@ -11,8 +12,43 @@
 
 .item>a{
     text-decoration:none;
+    clear:both;
+}
+
+
+.item>a>strong{
+    font-size:1.8rem;
 
 }
+.item>a>em{
+    color:#999;
+}
+.item>a>span{
+    /*float:left;*/
+    display:inline-block;
+    clear:both;
+}
+.item>a>span>img{
+    float:left;
+    padding:8px 12px 8px 0;
+    clear:both;
+}
+
+
+.loadMore{
+    margin:1.5rem 0 5rem 0 ;
+
+}
+
+footer{
+    font-size:0.85rem;
+    color:#999;
+    width:90%;
+    text-align:right;
+    padding:10px;
+}
+
+
 
 
 

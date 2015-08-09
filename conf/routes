@@ -8,6 +8,7 @@
 GET     /                           @controllers.Application.index()
 GET     /getItems                     @controllers.Items.getItems()
 GET     /getMore/:pubDate                     @controllers.Items.getMore(pubDate: String)
+GET     /search/:searchQuery                  @controllers.Items.searchItems(searchQuery: String)
 #GET     /ok                         @controllers.Items.index()
 
 

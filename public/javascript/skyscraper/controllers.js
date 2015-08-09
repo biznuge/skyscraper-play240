@@ -26,47 +26,22 @@ controller('itemsController', function($scope, itemsService, $http) {
     $scope.loadMore = function(){
 
         $scope.items.loading = true;
-
         console.log("Loading more for you");
 
-        // get last item in items.
-        // grab it's id.
-        // send this id on so that only items lower than this are selected.
         var item = $scope.items[$scope.items.length-1];
         var pubDate = item.pubDate
-        //console.log($scope.items);
-        //console.log(item);
-        //console.log(id);
-        //itemsService.getMore(pubDate);
 
         var req = {
          method: 'GET',
          url: '/getMore/'+pubDate,
-         /*
-         //?pubDate='+pubDate
-         headers: {
-           'Content-Type': undefined
-         },*/
          data: { pubDate: pubDate }
         };
 
-        //.then();
-
         $http(req).then($scope.loadMoreSucessful,$scope.loadMoreIssue);
-
-
-
 
     }
 
     $scope.loadMoreSucessful = function(response) {
-        //$scope.items = response.items;
-
-        //console.log($scope.items.length);
-        //$scope.items = $scope.items.concat(response.items);
-        //console.log($scope.items.length);
-
-//console.log(response.data);
 
         var items = response.data.items;
 
@@ -78,41 +53,86 @@ controller('itemsController', function($scope, itemsService, $http) {
 
         $scope.items.loading = false;
 
-
     }
 
 
     $scope.loadMoreIssue = function(response) {
 
-        alert("There was an issue with loading more for you. Try again if you'd like.");
+        alert("There was an issue with loading more items. Try again if you'd like. Could be network'ish");
         $scope.items.loading = false;
 
     }
-
-    $scope.search = function(){
-
-        console.log($scope.query);
-
-    }
-
 
     $scope.formatDate = function(date){
           var dateOut = new Date(date);
           return dateOut;
     };
 
+    $scope.searchSubmit = function(){
+
+        // we're passing in the event from the DOM / js method call
+        // so we can then grab the original event ( a mouseclick or keyboard action )
+        // and then preventDefault on it, which stops the form submission
+        // from a regular event.
+        //
+        // return false; then prevents this submission from occuring
+        try{
+            $scope.search();
+        }catch(exception){
+            console.error(exception)
+        }
+        console.log("IN searchSubmit()");
+        //event.originalEvent.preventDefault();
+        return false;
+
+    }
+
+
+    $scope.search = function(){
+
+        $scope.items.loading = true;
+        console.log("Searching for you");
+
+        //var item = $scope.items[$scope.items.length-1];
+        //var pubDate = item.pubDate
+
+
+
+        var req = {
+         method: 'GET',
+         url: '/search/'+$scope.searchQuery
+         /*,
+         data: { pubDate: pubDate }*/
+        };
+
+        $http(req).then($scope.searchSucessful,$scope.searchIssue);
+
+    }
+
+    $scope.searchSucessful = function(response) {
+
+        $scope.searchItems = response.data.items;
+
+        $scope.items.loading = false;
+
+    }
+
+
+    $scope.loadMoreIssue = function(response) {
+
+        alert("There was an issue with searching for items. Try again if you'd like. Could be network'ish");
+        $scope.items.loading = false;
+
+    }
+
+    $scope.killSearch = function(){
+
+        $scope.searchItems = null;
+        $scope.searchQuery = "";
+
+    }
+
+
+
 });
 
-/*
-angular.module('SkyScraperApp').filter('time', function($filter)
-{
- return function(pubDate)
- {
-  if(input == null){ return ""; }
-
-  var _date = $filter('date')(new Date(pubDate), 'HH:mm:ss');
-
-  return _date.toUpperCase();
-
- };
-});*/
