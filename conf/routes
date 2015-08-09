@@ -6,18 +6,10 @@
 
 # Single endpoint for serving AngularJS
 GET     /                           @controllers.Application.index()
-GET     /scrape                     @controllers.Items.scrape()
-GET     /ok                         @controllers.Items.index()
-#GET     /fuck                     controllers.Items.fuck()
-#GET     /randomUUID                 controllers.Application.randomUUID
-
-# User management API
-#GET     /items/:page/:term                      @controllers.Items.findItems(page:Integer, term: String)
-#POST    /itemSearch.json                 @controllers.Items.search
-#POST    /item                       @controllers.Users.createUser
-#PUT     /item/:firstName/:lastName  @controllers.Users.updateUser(firstName: String, lastName: String)
+GET     /getItems                     @controllers.Items.getItems()
+GET     /getMore/:pubDate                     @controllers.Items.getMore(pubDate: String)
+#GET     /ok                         @controllers.Items.index()
 
 
 # Map static resources from the /public folder to the /assets URL path
-#GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)
 GET        /assets/*file                 controllers.Assets.at(path="/public", file)

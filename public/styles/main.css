@@ -1,0 +1,18 @@
+.item{
+    padding:1rem;
+    border:1px solid #FFF;
+}
+
+.item:hover{
+    background-color:#EEEEEE;
+    border:1px solid #DDD;
+    cursor:pointer;
+}
+
+.item>a{
+    text-decoration:none;
+
+}
+
+
+

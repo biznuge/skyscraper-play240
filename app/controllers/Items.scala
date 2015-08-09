@@ -9,22 +9,22 @@ import play.modules.reactivemongo.{ ReactiveMongoComponents, ReactiveMongoApi, M
 import play.modules.reactivemongo.json.collection.JSONCollection
 import reactivemongo.api.collections.bson.BSONCollection
 import reactivemongo.bson.{ BSONInteger, BSONDateTime, BSONDocument }
-import scala.concurrent.Future
+import views.html.helper.form
+import scala.collection.mutable
+import scala.concurrent.{ Await, Future }
 import reactivemongo.api.{ QueryOpts, MongoDriver, Cursor }
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import org.slf4j.{ LoggerFactory, Logger }
 import javax.inject.{ Inject, Singleton }
 import play.api.mvc._
 import play.api.libs.json._
+import play.modules.reactivemongo.json._
+import scala.concurrent.duration._
 
-/**
- * The Users controllers encapsulates the Rest endpoints and the interaction with the MongoDB, via ReactiveMongo
- * play plugin. This provides a non-blocking driver for mongoDB as well as some useful additions for handling JSon.
- * @see https://github.com/ReactiveMongo/Play-ReactiveMongo
- */
-//@Singleton //class Items extends Controller with MongoController {
-//class Items extends Controller with MongoController {
-//class Items @Inject() (val reactiveMongoApi: ReactiveMongoApi)
+import play.api.libs.json._
+
+import scala.util.{ Success, Failure }
+
 class Items @Inject() (
   val reactiveMongoApi: ReactiveMongoApi,
   cached: Cached)
@@ -36,82 +36,161 @@ class Items @Inject() (
 
   import models._
 
-  def index = Action {
+  def toInt(s: String): Option[Int] = {
+    try {
+      Some(s.toInt)
+    } catch {
+      case e:
+        Exception => None
+    }
+  }
 
-    play.Logger.info("Hello Play Framework")
-    Ok(views.html.index("Hello Play Framework"))
+  def toLong(s: String): Option[Long] = {
+    try {
+      Some(s.toLong)
+    } catch {
+      case e:
+        Exception => None
+    }
+  }
+
+  //(pubDate: Int)
+  def getMore(pubDate: String) = Action.async { request =>
+
+    var pubDateLong = toLong(pubDate)
+
+    // http://stackoverflow.com/questions/26850964/how-do-write-a-date-range-query-in-mongodb-using-reactive-mongo-in-scala
+    // appears to work in the mongo client using.
+    // > db.items.find({"pubDate": {"$lt": 1438884060000}})
+
+    val query = BSONDocument(
+      "pubDate" -> BSONDocument(
+
+        // Attempting to do this as a BSONDateTime, as assumed since that's the DATATYPE
+        // resulted in no results. Using the raw Long here as the comparison value
+        // worked. No idea. Works.
+        //////"$lte" -> BSONDateTime(pubDateLong.head)
+
+        "$lt" -> pubDateLong.head
+
+      )
+    )
+
+    val sortJson = Json.obj("pubDate" -> -1)
+    val futureList: scala.concurrent.Future[List[Item]] =
+      collection.
+        find(query).
+        sort(sortJson).
+        cursor[Item]().
+        collect[List](10)
+
+    val timeout = 10.seconds
+    val timeoutFuture = play.api.libs.concurrent.Promise.timeout("Oops", timeout)
+
+    Future.firstCompletedOf(Seq(futureList, timeoutFuture)).map {
+      case list: List[Item] => {
+        // on successful return the items from the mongo collection
+        // are serialised to json and returned to the client.
+        Ok(Json.obj("items" -> list))
+      }
+      // error case.
+      case t: String => InternalServerError(t)
+    }
 
   }
 
-  def scrape = Action {
+  def getItems = Action.async {
 
-    //val query = {"IMAGE URL":{$exists:true}}
-
-    /*
-    val latestItems =
+    val query = BSONDocument()
+    val sortJson = Json.obj("pubDate" -> -1)
+    val futureList: scala.concurrent.Future[List[Item]] =
       collection.
         find(query).
-        // sort by lastName
-        //sort(BSONDocument("pubDate" -> 1)).
-        cursor[BSONDocument].
-        collect[List]()*/
-
-    /* this kind of works. parenthesis around the end of the cursro was the key due to the deprecation.*/
-    /*val cursor: Cursor[Item] = collection.
-      // find all
-      find(BSONDocument()).
-      // sort them by creation date
-      sort(Json.obj("pubDate" -> -1)).
-      // perform the query and get a cursor of JsObject
-      cursor[Item]()
-/////////////////////////////////////////////////////
-
-    peopleOlderThanTwentySeven.map { people =>
-      for(person <- people) {
-        val firstName = person.firstName
-        println(s"found $firstName")
-      }
-    }*/
-
-    // didn't work. Seems to be expecting a JSON
-    // document for some unfathomable reason.
-    val findBson = BSONDocument("pubDate" ->
-      BSONDocument("$eq" -> true)
-    )
-
-    // still utterly broken. now coming back with
-    // " No Json serializer as JsObject found for type Unit.
-    // Try to implement an implicit OWrites or OFormat for this type. "
-    //
-    // ---> Relational Data Modelling never seemed as easy as it does right now. <---
-    val findJson = Json.obj("pubDate" ->
-      Json.obj("$eq" -> true)
-    )
-
-    // works.
-    val sortJson = Json.obj("pubDate" -> -1)
-
-    val sortedItems =
-      collection.
-        //find(query).
-        find(findBson).
-        //sort(sortJson).
+        sort(sortJson).
         cursor[Item]().
-        collect[List]()
+        collect[List](10)
 
-    sortedItems.map { item =>
-      for (item <- item) {
-        val title = item.title
-        //println(s"found $firstName")
-        play.Logger.info(s"found $title")
+    val timeout = 10.seconds
+    val timeoutFuture = play.api.libs.concurrent.Promise.timeout("Oops", timeout)
+
+    if (Cache.get("scraped") == null) {
+
+      //
+      Cache.set("scraped", true, 300 * 1);
+      // immediately set the cache object so that no subsequent requests hit this block.
+      // not entirely sure about whether this cache class/object is application / session
+      // scope, so this is either very efficient or not even slightly...
+      //
+      // tested with sessions in FF / Chrome and it DOES do an application
+      // scope style cache. Cool as tits.
+      //
+      // this prevents us from
+      //  A) making constant requests to the SKY RSS, which would most likely result
+      //     in a restriction, since traffic increase would DDOS... :)
+      //  B) Roundtrips to the DB can be reduced significantly.
+      //
+      // Caveat. This method, although it drops resource, will require a single first
+      // hit of the controller emthod which would initialise the mongodb recordset
+      // with Atom Feed data.
+
+      import reactivemongo.bson._
+      val xml = scala.xml.XML.load("http://www.skysports.com/feeds/11095/news.xml")
+
+      val items = xml \ "channel" \ "item"
+
+      items.foreach { n =>
+
+        val title = (n \\ "title").text
+        val description = (n \\ "description").text
+        val link = (n \\ "link").text
+        val pubDate = (n \\ "pubDate").text
+        val category = (n \\ "category").text
+        val image = (n \\ "enclosure" \ "@url").text
+
+        // BST explodes the DateTimeFormat parse at the z
+        // stupid Bangladeshi Standard Time.
+        // "Sat, 01 Aug 2015 08:00:00 BST"
+        //
+        // This technically makes dates incorrect to a certain degree ( a fairly high one
+        // for 6 months of the year to be precise).
+        //
+        val dateTimeStr = pubDate.replace(" BST", " GMT")
+
+        var dateTimeObj = DateTime.parse(dateTimeStr, DateTimeFormat.forPattern("EEE, dd MMM y HH:mm:ss z"))
+
+        val item = Item(
+          title,
+          description,
+          link,
+          dateTimeObj,
+          category,
+          image
+        )
+
+        collection.insert(item).map {
+          lastError =>
+            logger.debug(s"Successfully inserted with LastError: $lastError")
+            Created(s"Item Created")
+        }
+
       }
+
     }
 
-    //val query = BSONDocument()
+    Future.firstCompletedOf(Seq(futureList, timeoutFuture)).map {
+      case list: List[Item] => {
+        // on successful return the items from the mongo collection
+        // are serialised to json and returned to the client.
+        Ok(Json.obj("items" -> list))
+      }
+      // error case.
+      case t: String => InternalServerError(t)
+    }
 
-    /*collection.find(query)
-      .options(QueryOpts(10, 5))
-      .sort(BSONDocument("pubDate" -> 1)) // WORKS*/
+  }
+
+  /*
+  {
 
     if (Cache.get("scraped") == null) {
 
@@ -133,7 +212,18 @@ class Items @Inject() (
       import reactivemongo.bson._
 
       // { "age": { "$gt": 27 } }
-      val query = BSONDocument("age" -> BSONDocument("$gt" -> 27))
+      //val query = BSONDocument("age" -> BSONDocument("$gt" -> 27))
+
+      /*val query = BSONDocument();
+      val peopleOlderThanTwentySeven =
+        collection.
+          find(query).
+          cursor[BSONDocument].
+          collect[List]()*/
+
+      //  [error] C:\sites\skyscraper9\app\controllers\Items.scala:97: No Json serializer
+      //as JsObject found for type reactivemongo.bson.BSONDocument. Try to implement an
+      //implicit OWrites or OFormat for this type.
 
       // result type is Future[List[BSONDocument]]
       /*val peopleOlderThanTwentySeven =
@@ -189,8 +279,9 @@ class Items @Inject() (
       play.Logger.info("missed the Atom consumer due to cache.")
     }
 
-    Ok("OK")
+
   }
+  */
 
   /*Future.successful {
       BadRequest("invalid json")

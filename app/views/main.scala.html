@@ -8,6 +8,13 @@
     <link rel="stylesheet" href='@routes.Assets.at("lib/bootstrap/css/bootstrap.min.css")' >
     <script type="text/javascript" src='@routes.Assets.at("lib/jquery/jquery.min.js")'></script>
     <script type="text/javascript" src='@routes.Assets.at("lib/bootstrap/js/bootstrap.min.js")'></script>
+    <script type="text/javascript" src='@routes.Assets.at("lib/angularjs/angular.min.js")'></script>
+
+    <script src="/assets/javascript/skyscraper/app.js"></script>
+    <script src="/assets/javascript/skyscraper/services.js"></script>
+    <script src="/assets/javascript/skyscraper/controllers.js"></script>
+
+    <link rel='stylesheet' href='/assets/styles/main.css'>
 
     <!--<link rel="stylesheet" href="https://www.playframework.com/assets/css/ecc90f36c0da593d16e3943186e17bd9-main.min.css">-->
 
@@ -19,13 +26,6 @@
     </style>
 </head>
 <body>
-    <div class="navbar navbar-fixed-top">
-        <div class="navbar-inner">
-            <div class="container-fluid">
-                <a id="titleLink" class="brand" href="/">@title</a>
-            </div>
-        </div>
-    </div>
     <div class="container">
         @content
     </div>
